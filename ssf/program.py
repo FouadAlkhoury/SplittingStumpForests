@@ -21,6 +21,7 @@ import DecisionSnippetFeatures as DecisionSnippetFeatures
 import datetime
 from util import writeToReport
 import numpy as np
+import m2cgen as m2c
 
 dataPath = "../data/"
 forestsPath = "../tmp/forests/"
@@ -32,21 +33,20 @@ reportsPath = "../tmp/reports/"
 def list_to_str(list):
     str_list = ''
     for l in list:
-        #print(l)
         str_list += str(l) + ','
     return str_list
 
 datasets = ['spambase']
-forest_depths = [5,10,15]
-forest_sizes = [16,32,64]
-thresholds = [0.15, 0.25]
+forest_depths = [5]
+forest_sizes = [16]
+thresholds = [0.25]
 edge_thresholds = [1.0 - x  for x in thresholds]
 forest_types = ['RF']
 maxPatternSize = 1
 minThreshold = 1
 maxThreshold = 1
 scoring_function = 'accuracy'
-# learners that are to be used on top of Decision Snippet Features
+# learners on top of the Splitting Stumps
 learners = {'LR': LogisticRegression}
 learners_parameters = {'LR': {'max_iter': 10000}}
 verbose = True
@@ -64,15 +64,15 @@ def traverse(tree, threshold):
         traverse(tree["leftChild"], threshold)
         traverse(tree["rightChild"], threshold)
 
-def dsf_transform_edges(snippets_file, X, is_train):
+def ssf_transform_data(stumps_file, X, is_train):
     global pruning_time
     global patterns_count
     global patterns_ratio
     global filtered_patterns_indexes
 
-    with open(snippets_file, 'r') as f_decision_snippets:
+    with open(stumps_file, 'r') as stumps:
         # load decision snippets and create decision snippet features
-        frequentpatterns = json.load(f_decision_snippets)
+        frequentpatterns = json.load(stumps)
         patterns_count = len(frequentpatterns)
 
         dsf = DecisionSnippetFeatures.FrequentSubtreeFeatures(
@@ -88,9 +88,9 @@ def dsf_transform_edges(snippets_file, X, is_train):
         return fts_onehot
 
 
-def compute_nodes_count(snippets_file):
+def compute_nodes_count(stumps_file):
 
-    with open(snippets_file, 'r') as f:
+    with open(stumps_file, 'r') as f:
         text = f.read()
         nodes_count = text.count('"id"')
     f.close()
@@ -211,7 +211,7 @@ for dataset in datasets:
                             graph_file = 'RF_' + str(size) + '_' + str(depth) + '_pruned_' + str(threshold) + '.json'
                             snippets_file = os.path.join(stumpsPath, dataset, graph_file)
                             nodes_count = compute_nodes_count(snippets_file)
-                            fts_onehot = dsf_transform_edges(snippets_file, X_train, True)
+                            fts_onehot = ssf_transform_data(snippets_file, X_train, True)
                             if (threshold == 1.0):
                                 patterns_count_ref = patterns_count
                                 nodes_count_ref = nodes_count
@@ -233,7 +233,7 @@ for dataset in datasets:
                                 writeToReport(report_time_file,
                                               'Training Time for ' + graph_file + ' , ' + model_type + ' : ' + str(
                                                   training_time))
-                                fts_onehot_test = dsf_transform_edges(os.path.join(stumpsPath, dataset, graph_file), X_test,
+                                fts_onehot_test = ssf_transform_data(os.path.join(stumpsPath, dataset, graph_file), X_test,
                                                                       False)
                                 start_testing = datetime.datetime.now()
                                 Y_pred = learner_model.predict(fts_onehot_test)

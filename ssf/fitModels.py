@@ -6,7 +6,6 @@ import os.path
 import json
 import timeit
 import datetime
-
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import AdaBoostClassifier
@@ -19,6 +18,7 @@ import joblib
 sys.path.append('../arch-forest/code/')
 import Forest
 import Tree
+import m2cgen as m2c
 
 resultsPath = "../tmp/results/"
 reportsPath = "../tmp/reports/"
@@ -30,6 +30,10 @@ def testModel(roundSplit, iterations, dataset, XTrain, YTrain, XTest, YTest, mod
 
 	print("Fitting", name)
 	model.fit(XTrain,YTrain)
+	c_code_model = m2c.export_to_c(model)
+	with open("rf_model_c.c","w") as f:
+		f.write(c_code_model)
+
 
 	#cross_val_scores = cross_val_score(model, XTrain,YTrain)
 	#print(cross_val_scores)
@@ -84,12 +88,6 @@ def fitModels(roundSplit, iterations, dataset, XTrain, YTrain, XTest=None, YTest
               types=['RF', 'ET', 'DT'], 
 			  forest_depths = [1,2],
               forest_sizes = [20,30]):
-	''' Fit a bunch of forest models to the given train data and write the resulting models to disc.
-	Possible forest types are: 
-	- DT (decision tree)
-	- ET (extra trees)
-	- RF (random forest)
-	- AB (adaboost) '''
 
 	accuracy_arr = np.zeros((len(forest_sizes),len(forest_depths), iterations),dtype=np.float32)
 	print(accuracy_arr)
