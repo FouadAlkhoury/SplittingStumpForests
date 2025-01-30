@@ -4,6 +4,8 @@ Code and data accompanying the paper
 
 Splitting Stump Forests: Tree Ensemble Compression for Edge Devices.
 Fouad Alkhoury and Pascal Welke.
+The code is based on a code written by Sebastian Buschjäger (TU Dortmund) that is used for json-serialization of random forest models.
+
 
 ## Repository Structure
 
